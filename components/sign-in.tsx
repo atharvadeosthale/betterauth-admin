@@ -46,7 +46,7 @@ export default function SignIn() {
               onClick={async () => {
                 await authClient.signIn.social({
                   provider: "google",
-                  callbackURL: "/dashboard",
+                  callbackURL: "http://localhost:3000/dashboard",
                 });
               }}
             >
