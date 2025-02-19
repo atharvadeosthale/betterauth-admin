@@ -7,6 +7,7 @@ import { Users, Building2, Search, User, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { authClient } from "@/lib/auth-client";
 
 const navigation = [
   {
@@ -27,6 +28,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { data: session } = authClient.useSession();
 
   return (
     <div className="min-h-screen bg-neutral-50/50 dark:bg-neutral-950">
@@ -96,7 +98,14 @@ export default function DashboardLayout({
               size="icon"
               className="rounded-xl w-10 h-10 bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200/50 dark:hover:bg-neutral-700/50"
             >
-              <User className="w-4 h-4" />
+              {session?.user.image ? (
+                <img
+                  src={session.user.image}
+                  className="w-10 h-10 rounded-full"
+                />
+              ) : (
+                <User className="w-4 h-4" />
+              )}
             </Button>
           </div>
         </header>
