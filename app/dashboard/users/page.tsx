@@ -351,18 +351,20 @@ export default function UsersPage() {
                           {session.userAgent}
                         </p>
                         {session.impersonatedBy && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                tabIndex={-1}
+                                className="focus:outline-none"
+                              >
                                 <UserCircle2 className="w-3.5 h-3.5 text-neutral-400" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs">
-                                  Impersonated by {session.impersonatedBy.email}
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              Impersonated by {session.impersonatedBy.email}
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
