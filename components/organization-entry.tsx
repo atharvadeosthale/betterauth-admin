@@ -52,7 +52,7 @@ interface EntryProps {
   onSelect?: (data: OrganizationData) => void;
 }
 
-export function Entry({ data, variant, onSelect }: EntryProps) {
+export function OrgEntry({ data, variant, onSelect }: EntryProps) {
   const isOrg = variant === "organization";
   const org = isOrg ? (data as OrganizationData) : null;
   const member = !isOrg ? (data as MemberData) : null;

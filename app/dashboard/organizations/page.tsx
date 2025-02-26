@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Users, UserPlus } from "lucide-react";
 import { useState } from "react";
-import { Entry } from "../../../components/entry";
+import { OrgEntry } from "../../../components/organization-entry";
 
 // Types
 type Member = {
@@ -152,7 +152,7 @@ export default function OrganizationsPage() {
       <div className="rounded-3xl bg-white/40 dark:bg-neutral-900/40 backdrop-blur-xl border border-neutral-200/50 dark:border-neutral-800/50 overflow-hidden">
         <div className="divide-y divide-neutral-200/50 dark:divide-neutral-800/50">
           {mockOrganizations.map((org) => (
-            <Entry
+            <OrgEntry
               key={org.id}
               data={org}
               variant="organization"
@@ -213,7 +213,7 @@ export default function OrganizationsPage() {
             </h4>
             <div className="space-y-3">
               {selectedOrg?.members.map((member) => (
-                <Entry key={member.id} data={member} variant="member" />
+                <OrgEntry key={member.id} data={member} variant="member" />
               ))}
             </div>
           </div>
