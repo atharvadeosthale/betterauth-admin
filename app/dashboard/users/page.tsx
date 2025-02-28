@@ -37,7 +37,7 @@ import UserEntry from "@/components/user-entry";
 export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
 
-  const { data: users } = useQuery({
+  const { data: users, refetch: refetchUsers } = useQuery({
     queryKey: ["users"],
     queryFn: () => listUsers({ limit: 100, offset: 0 }),
   });
@@ -82,7 +82,7 @@ export default function UsersPage() {
         <div className="divide-y divide-neutral-200/50 dark:divide-neutral-800/50">
           {users?.data?.users ? (
             users.data.users.map((user) => (
-              <UserEntry key={user.id} user={user} />
+              <UserEntry key={user.id} user={user} refetch={refetchUsers} />
             ))
           ) : (
             <>
