@@ -1,7 +1,7 @@
 "use client";
 
 import { UserWithRole } from "better-auth/plugins/admin";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   Ban,
@@ -24,17 +24,33 @@ import {
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { getUserSessions } from "@/lib/query";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import Session from "./session";
+import { revokeAllSessions } from "@/lib/mutation";
+import { toast } from "sonner";
 
 export default function UserEntry({ user }: { user: UserWithRole }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const { data: sessions } = useQuery({
+  const {
+    data: sessions,
+    refetch: refetchSessions,
+    isLoading: isLoadingSessions,
+  } = useQuery({
     queryKey: ["user-sessions", user.id],
     queryFn: () => getUserSessions(user.id),
     enabled: isOpen,
+  });
+
+  const { mutate: revokeAll } = useMutation({
+    mutationFn: () => revokeAllSessions(user.id),
+    onSuccess: () => {
+      toast.success("All sessions revoked");
+      refetchSessions();
+    },
+    onError: () => toast.error("Failed to revoke all sessions"),
   });
 
   return (
@@ -47,6 +63,7 @@ export default function UserEntry({ user }: { user: UserWithRole }) {
         onClick={() => setIsOpen(true)}
       >
         <Avatar className="h-10 w-10 ring-2 ring-white dark:ring-neutral-900 group-hover:ring-neutral-100 dark:group-hover:ring-neutral-800 transition-all">
+          <AvatarImage src={user.image as string} />
           <AvatarFallback className="bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-medium">
             {user.name
               .split(" ")
@@ -144,6 +161,7 @@ export default function UserEntry({ user }: { user: UserWithRole }) {
             </DialogTitle>
             <div className="flex items-start gap-4">
               <Avatar className="h-16 w-16 ring-4 ring-white dark:ring-neutral-900">
+                <AvatarImage src={user.image as string} />
                 <AvatarFallback className="bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-lg font-medium">
                   {user.name
                     .split(" ")
@@ -207,67 +225,56 @@ export default function UserEntry({ user }: { user: UserWithRole }) {
               </div>
             </div>
           </DialogHeader>
-          Active Sessions
-          <div className="mt-6">
-            <h4 className="text-sm font-medium mb-4 flex items-center gap-2 px-1">
-              <Globe className="w-4 h-4 text-neutral-400" />
-              Active Sessions
-            </h4>
+
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-sm font-medium flex items-center gap-2 px-1">
+                <Globe className="w-4 h-4 text-neutral-400" />
+                Active Sessions
+              </h4>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-2 text-red-600 dark:text-red-400 group-hover:opacity-100 transition-opacity hover:bg-red-50 dark:hover:bg-red-500/10"
+                onClick={() => revokeAll()}
+              >
+                <LogOut className="h-4 w-4" />
+                Revoke All Sessions
+              </Button>
+            </div>
             <div className="space-y-3">
-              {sessions?.data?.sessions?.map((session) => (
-                <div
-                  key={session.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-white/40 dark:bg-neutral-800/40 border border-neutral-200/50 dark:border-neutral-800/50 group hover:bg-white/60 dark:hover:bg-neutral-800/60 transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center ring-2 ring-white dark:ring-neutral-900">
-                      <Chrome className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {session.userAgent}
-                        </p>
-                        {/* {session.id && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                tabIndex={-1}
-                                className="focus:outline-none"
-                              >
-                                <UserCircle2 className="w-3.5 h-3.5 text-neutral-400" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              Impersonated by {session.impersonatedBy.email}
-                            </TooltipContent>
-                          </Tooltip>
-                        )} */}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                          {session.ipAddress}
-                        </p>
-                        {/* <span className="text-xs text-neutral-600 dark:text-neutral-400">
-                          •
-                        </span>
-                        <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                          {session.lastActive}
-                        </p> */}
+              {isLoadingSessions ? (
+                <>
+                  <div className="animate-pulse flex items-center justify-between p-3 rounded-lg border border-neutral-200 dark:border-neutral-800">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-neutral-200 dark:bg-neutral-800 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 w-24 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
+                        <div className="h-3 w-32 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
                       </div>
                     </div>
+                    <div className="w-20 h-8 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="gap-2 text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 dark:hover:bg-red-500/10"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Revoke
-                  </Button>
-                </div>
-              ))}
+                  <div className="animate-pulse flex items-center justify-between p-3 rounded-lg border border-neutral-200 dark:border-neutral-800">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-neutral-200 dark:bg-neutral-800 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 w-24 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
+                        <div className="h-3 w-32 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="w-20 h-8 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
+                  </div>
+                </>
+              ) : (
+                sessions?.data?.sessions?.map((session) => (
+                  <Session
+                    key={session.id}
+                    session={session}
+                    refetchSessions={refetchSessions}
+                  />
+                ))
+              )}
             </div>
           </div>
         </DialogContent>
