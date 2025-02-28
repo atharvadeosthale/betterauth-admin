@@ -61,9 +61,13 @@ export default function UsersPage() {
             </div>
             <div className="bg-white/60 dark:bg-neutral-800/60 backdrop-blur-xl rounded-2xl px-6 py-3 border border-neutral-200/50 dark:border-neutral-800/50 self-start">
               <div className="text-center">
-                <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-                  {users?.data?.users.length}
-                </p>
+                {users?.data?.users ? (
+                  <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+                    {users.data.users.length}
+                  </p>
+                ) : (
+                  <div className="h-9 w-16 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse mx-auto"></div>
+                )}
                 <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 mt-1">
                   Total Users
                 </p>
@@ -76,9 +80,29 @@ export default function UsersPage() {
       {/* Users List */}
       <div className="rounded-3xl bg-white/40 dark:bg-neutral-900/40 backdrop-blur-xl border border-neutral-200/50 dark:border-neutral-800/50 overflow-hidden">
         <div className="divide-y divide-neutral-200/50 dark:divide-neutral-800/50">
-          {users?.data?.users.map((user) => (
-            <UserEntry key={user.id} user={user} />
-          ))}
+          {users?.data?.users ? (
+            users.data.users.map((user) => (
+              <UserEntry key={user.id} user={user} />
+            ))
+          ) : (
+            <>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between px-6 py-4 animate-pulse"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="h-10 w-10 rounded-full bg-neutral-200 dark:bg-neutral-800"></div>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="h-4 w-32 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
+                      <div className="h-3 w-48 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
+                    </div>
+                    <div className="h-6 w-20 bg-neutral-200 dark:bg-neutral-800 rounded-full"></div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
           {/* {users?.data?.users.map((user) => (
             <div
               key={user.id}

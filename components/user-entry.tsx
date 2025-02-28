@@ -13,6 +13,7 @@ import {
   Trash2,
   UserCircle2,
   UserCog2,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -25,14 +26,15 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getUserSessions } from "@/lib/query";
+import { getUser, getUserSessions } from "@/lib/query";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import Session from "./session";
-import { revokeAllSessions } from "@/lib/mutation";
+import { banUser, revokeAllSessions, unbanUser } from "@/lib/mutation";
 import { toast } from "sonner";
 
 export default function UserEntry({ user }: { user: UserWithRole }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const {
     data: sessions,
@@ -44,13 +46,55 @@ export default function UserEntry({ user }: { user: UserWithRole }) {
     enabled: isOpen,
   });
 
-  const { mutate: revokeAll } = useMutation({
+  const {
+    data: userData,
+    refetch: refetchUser,
+    isLoading: isLoadingUser,
+  } = useQuery({
+    queryKey: ["user", user.id],
+    queryFn: () => getUser(user.id),
+    enabled: isOpen,
+  });
+
+  const { mutate: revokeAll, isPending: isRevokingAll } = useMutation({
     mutationFn: () => revokeAllSessions(user.id),
     onSuccess: () => {
       toast.success("All sessions revoked");
       refetchSessions();
+      setDropdownOpen(false);
     },
-    onError: () => toast.error("Failed to revoke all sessions"),
+    onError: () => {
+      toast.error("Failed to revoke all sessions");
+      setDropdownOpen(false);
+    },
+  });
+
+  const { mutate: ban, isPending: isBanning } = useMutation({
+    mutationFn: () => banUser(user.id),
+    onSuccess: () => {
+      toast.success("User banned");
+      refetchSessions();
+      refetchUser();
+      setDropdownOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to ban user");
+      setDropdownOpen(false);
+    },
+  });
+
+  const { mutate: unban, isPending: isUnbanning } = useMutation({
+    mutationFn: () => unbanUser(user.id),
+    onSuccess: () => {
+      toast.success("User unbanned");
+      refetchSessions();
+      refetchUser();
+      setDropdownOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to unban user");
+      setDropdownOpen(false);
+    },
   });
 
   return (
@@ -124,9 +168,16 @@ export default function UserEntry({ user }: { user: UserWithRole }) {
             )}
             {user.role}
           </span>
+
+          {(userData?.data?.users[0].banned || user.banned) && (
+            <span className="px-2.5 py-1 text-xs font-medium rounded-full inline-flex items-center gap-1.5 bg-red-50/50 dark:bg-red-500/10 text-red-600 dark:text-red-400">
+              <Ban className="w-3 h-3" />
+              Banned
+            </span>
+          )}
         </div>
       </div>
-      <DropdownMenu>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
@@ -136,17 +187,54 @@ export default function UserEntry({ user }: { user: UserWithRole }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem className="gap-2 cursor-pointer">
+          <DropdownMenuItem
+            className="gap-2 cursor-pointer"
+            onClick={() => setDropdownOpen(false)}
+          >
             <UserCircle2 className="h-4 w-4" /> Impersonate
           </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2 cursor-pointer">
+          <DropdownMenuItem
+            className="gap-2 cursor-pointer"
+            onClick={() => setDropdownOpen(false)}
+          >
             <UserCog2 className="h-4 w-4" /> Edit Role
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="gap-2 text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 cursor-pointer">
-            <Ban className="h-4 w-4" /> Ban User
-          </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2 text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 cursor-pointer">
+          {userData?.data?.users[0].banned || user.banned ? (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                unban();
+              }}
+              className="gap-2 text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 cursor-pointer"
+            >
+              {isUnbanning ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Ban className="h-4 w-4" />
+              )}
+              Unban User
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                ban();
+              }}
+              className="gap-2 text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 cursor-pointer"
+            >
+              {isBanning ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Ban className="h-4 w-4" />
+              )}
+              Ban User
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem
+            className="gap-2 text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 cursor-pointer"
+            onClick={() => setDropdownOpen(false)}
+          >
             <Trash2 className="h-4 w-4" /> Delete User
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -221,6 +309,13 @@ export default function UserEntry({ user }: { user: UserWithRole }) {
                     )}
                     {user.role}
                   </span>
+
+                  {(userData?.data?.users[0].banned || user.banned) && (
+                    <span className="px-2.5 py-1 text-xs font-medium rounded-full inline-flex items-center gap-1.5 bg-red-50/50 dark:bg-red-500/10 text-red-600 dark:text-red-400">
+                      <Ban className="w-3 h-3" />
+                      Banned
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -237,8 +332,13 @@ export default function UserEntry({ user }: { user: UserWithRole }) {
                 variant="ghost"
                 className="gap-2 text-red-600 dark:text-red-400 group-hover:opacity-100 transition-opacity hover:bg-red-50 dark:hover:bg-red-500/10"
                 onClick={() => revokeAll()}
+                disabled={isRevokingAll}
               >
-                <LogOut className="h-4 w-4" />
+                {isRevokingAll ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOut className="h-4 w-4" />
+                )}
                 Revoke All Sessions
               </Button>
             </div>
